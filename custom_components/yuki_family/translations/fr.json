@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Relier à Yuki Family",
+        "description": "Dans l'appli Yuki Family : Domotique Maison → « Obtenir mon code ». Colle ici le code de 8 caractères (valable 10 minutes).",
+        "data": { "code": "Code d'appairage", "server": "Serveur Yuki Family" }
+      },
+      "reauth_confirm": {
+        "title": "Relier de nouveau à Yuki Family",
+        "description": "Yuki Family ne reconnaît plus cette maison (elle a été déconnectée dans l'appli). Demande un nouveau code dans Domotique Maison et colle-le ici.",
+        "data": { "code": "Code d'appairage", "server": "Serveur Yuki Family" }
+      }
+    },
+    "error": {
+      "invalid_code": "Code inconnu ou expiré : demandes-en un nouveau dans l'appli.",
+      "cannot_connect": "Impossible de joindre Yuki Family : vérifie la connexion Internet de la maison."
+    },
+    "abort": {
+      "single_instance_allowed": "Ce Home Assistant est déjà relié à Yuki Family.",
+      "reauth_successful": "C'est relié de nouveau !"
+    }
+  }
+}

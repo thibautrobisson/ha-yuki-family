@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Link to Yuki Family",
+        "description": "In the Yuki Family app: Domotique Maison → « Obtenir mon code ». Paste the 8-character code here (valid for 10 minutes).",
+        "data": { "code": "Pairing code", "server": "Yuki Family server" }
+      },
+      "reauth_confirm": {
+        "title": "Link to Yuki Family again",
+        "description": "Yuki Family no longer knows this home (it was disconnected in the app). Ask for a new code in Domotique Maison and paste it here.",
+        "data": { "code": "Pairing code", "server": "Yuki Family server" }
+      }
+    },
+    "error": {
+      "invalid_code": "Unknown or expired code: ask for a new one in the app.",
+      "cannot_connect": "Cannot reach Yuki Family: check the home's Internet connection."
+    },
+    "abort": {
+      "single_instance_allowed": "This Home Assistant is already linked to Yuki Family.",
+      "reauth_successful": "Linked again!"
+    }
+  }
+}
