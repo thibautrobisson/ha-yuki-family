@@ -1,13 +1,20 @@
 {
   "domain": "yuki_family",
   "name": "Yuki Family",
-  "codeowners": ["@thibautrobisson"],
+  "categories": [
+    "other_ecosystems"
+  ],
+  "codeowners": [
+    "@thibautrobisson"
+  ],
   "config_flow": true,
-  "dependencies": ["http"],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/thibautrobisson/ha-yuki-family",
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/thibautrobisson/ha-yuki-family/issues",
   "requirements": [],
   "single_config_entry": true,
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
