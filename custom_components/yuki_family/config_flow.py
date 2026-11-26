@@ -33,11 +33,8 @@ class YukiFamilyConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     def _schema(self) -> vol.Schema:
-        fields: dict[Any, Any] = {vol.Required(CONF_CODE): str}
-        # Mode avancé seulement : un autre serveur Yuki (essais).
-        if self.show_advanced_options:
-            fields[vol.Optional(CONF_SERVER, default=SERVER)] = str
-        return vol.Schema(fields)
+        # shortcut: plus de choix du serveur (show_advanced_options disparaît en 2027.6) ; s'il en faut un, une section repliée.
+        return vol.Schema({vol.Required(CONF_CODE): str})
 
     async def _pair(self, user_input: dict[str, Any]) -> tuple[dict[str, Any] | None, dict[str, str]]:
         server = user_input.get(CONF_SERVER) or SERVER
@@ -65,7 +62,7 @@ class YukiFamilyConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
-            # Le même serveur que la première fois (sauf s'il est changé en mode avancé).
+            # Le même serveur que la première fois.
             user_input.setdefault(CONF_SERVER, self._get_reauth_entry().data.get(CONF_SERVER, SERVER))
             data, errors = await self._pair(user_input)
             if data:

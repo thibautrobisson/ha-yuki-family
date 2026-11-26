@@ -4,12 +4,12 @@
       "user": {
         "title": "Link to Yuki Family",
         "description": "In the Yuki Family app: Domotique Maison → « Obtenir mon code ». Paste the 8-character code here (valid for 10 minutes).",
-        "data": { "code": "Pairing code", "server": "Yuki Family server" }
+        "data": { "code": "Pairing code" }
       },
       "reauth_confirm": {
         "title": "Link to Yuki Family again",
         "description": "Yuki Family no longer knows this home (it was disconnected in the app). Ask for a new code in Domotique Maison and paste it here.",
-        "data": { "code": "Pairing code", "server": "Yuki Family server" }
+        "data": { "code": "Pairing code" }
       }
     },
     "error": {

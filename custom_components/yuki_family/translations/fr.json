@@ -4,12 +4,12 @@
       "user": {
         "title": "Relier à Yuki Family",
         "description": "Dans l'appli Yuki Family : Domotique Maison → « Obtenir mon code ». Colle ici le code de 8 caractères (valable 10 minutes).",
-        "data": { "code": "Code d'appairage", "server": "Serveur Yuki Family" }
+        "data": { "code": "Code d'appairage" }
       },
       "reauth_confirm": {
         "title": "Relier de nouveau à Yuki Family",
         "description": "Yuki Family ne reconnaît plus cette maison (elle a été déconnectée dans l'appli). Demande un nouveau code dans Domotique Maison et colle-le ici.",
-        "data": { "code": "Code d'appairage", "server": "Serveur Yuki Family" }
+        "data": { "code": "Code d'appairage" }
       }
     },
     "error": {
