@@ -37,7 +37,7 @@ def test_allowed():
     assert allowlist.classify(ws(type="config/entity_registry/update", entity_id="device_tracker.tel", disabled_by=None))[0] == "admin"
     assert allowlist.classify(ws(type="automation/config", entity_id="automation.pompe"))[0] == "admin"
     assert allowlist.classify(http("GET", "/api/camera_proxy/camera.jardin")) == ("user", "http")
-    assert allowlist.classify(http("GET", "/api/config/config_entries/flow_handlers?type=integration")) == ("user", "http")
+    assert allowlist.classify(http("GET", "/api/config/config_entries/flow_handlers?type=integration")) == ("admin", "brands")
     assert allowlist.classify(http("POST", "/api/config/config_entries/flow")) == ("admin", "flow_start")
     assert allowlist.classify(http("POST", "/api/config/config_entries/flow/01JABC")) == ("admin", "flow_post")
     assert allowlist.classify(http("DELETE", "/api/config/config_entries/flow/01JABC")) == ("admin", "flow_delete")

@@ -29,9 +29,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar, config_validation as cv, device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.json import json_bytes
-from homeassistant.loader import async_get_config_flows
+from homeassistant.loader import async_get_config_flows, async_get_custom_components
 
-from .allowlist import FLOW_STEP, REENABLE_FROM, Refused, automation_view, classify, owned
+from .allowlist import BRAND_TYPES, FLOW_STEP, REENABLE_FROM, Refused, automation_view, classify, owned
 from .const import CONF_ENTRIES, CONF_RELAY_ID, CONF_SECRET, CONF_SERVER, CONF_USER_ID, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -204,6 +204,14 @@ class Relay:
             raise ValueError("Automatisation inconnue")
         return {"config": automation_view(automation.raw_config)}
 
+    async def brands(self) -> set[str]:
+        """Les marques qu'on peut ajouter : la liste de Home Assistant, plus les intégrations personnalisées (HACS…),
+        que Home Assistant n'y met que si leur manifeste dit « integration », ce qu'elles ne font pas (défaut : hub)."""
+        flows = set(await async_get_config_flows(self.hass, "integration"))
+        flows |= {d for d, i in (await async_get_custom_components(self.hass)).items() if i.config_flow and i.integration_type in BRAND_TYPES}
+        flows.discard(DOMAIN)
+        return flows
+
     async def flow(self, what: str, ask: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         """Ajouter une marque : une intégration de la liste des marques (jamais Yuki Family), formulaires ouverts ici seulement."""
         flows = self.hass.config_entries.flow
@@ -217,7 +225,7 @@ class Relay:
                     set(body) - {"handler", "show_advanced_options"}
                     or not isinstance(handler, str)
                     or handler == DOMAIN
-                    or handler not in await async_get_config_flows(self.hass, "integration")
+                    or handler not in await self.brands()
                 ):
                     raise Refused(f"marque {handler!r}")
                 result = await flows.async_init(handler, context={"source": SOURCE_USER, "show_advanced_options": False})
@@ -252,6 +260,8 @@ class Relay:
             if what == "ws":
                 return 200, JSON, json_bytes(await self.command(ask["cmd"]))
             return await self.http(ask["path"])
+        if what == "brands":
+            return 200, JSON, json_bytes(sorted(await self.brands()))
         if what.startswith("flow_"):
             status, data = await self.flow(what, ask)
             return status, JSON, json_bytes(data)

@@ -38,13 +38,13 @@ La même liste est dans le code : [`allowlist.py`](custom_components/yuki_family
 | WebSocket `manifest/list` | le nom et le type des marques |
 | WebSocket `call_service` | allumer, éteindre, régler un appareil, la météo du jour |
 | REST `GET /api/camera_proxy/camera.<nom>` | l'image d'une caméra |
-| REST `GET /api/config/config_entries/flow_handlers?type=integration` | la liste des marques qu'on peut ajouter |
 
 **Réglages réservés aux administrateurs**, faits par l'intégration elle-même, un par un, avec ces seuls paramètres :
 
 | Demande | Paramètres acceptés | Sert à |
 | --- | --- | --- |
-| REST `POST /api/config/config_entries/flow` | `handler` : une intégration de la liste des marques ci-dessus, jamais Yuki Family | commencer l'ajout d'une marque |
+| REST `GET /api/config/config_entries/flow_handlers?type=integration` | aucun | la liste des marques qu'on peut ajouter : celle de Home Assistant, plus tes intégrations personnalisées installées (HACS…) de type appareil, hub ou service, jamais Yuki Family |
+| REST `POST /api/config/config_entries/flow` | `handler` : une marque de cette liste | commencer l'ajout d'une marque |
 | REST `POST` et `DELETE /api/config/config_entries/flow/<id>` | seulement un ajout de marque ouvert par Yuki | répondre au formulaire de la marque, ou l'abandonner |
 | WebSocket `config/device_registry/update` | `device_id` d'un appareil **d'une intégration ajoutée depuis Yuki**, `name_by_user`, `area_id` | renommer un appareil, le ranger dans une pièce |
 | WebSocket `config/area_registry/create` | `name` | créer une pièce |
@@ -52,6 +52,6 @@ La même liste est dans le code : [`allowlist.py`](custom_components/yuki_family
 | WebSocket `call_service` `homeassistant.reload_config_entry` | `entry_id` d'une **intégration ajoutée depuis Yuki** | « Actualiser » : recharger une intégration |
 | WebSocket `automation/config` | `entity_id` d'une automatisation | lire **sa description seulement** (le programme d'un appareil) ; déclencheurs, conditions et actions ne sortent jamais |
 
-**In English:** the relay only runs the requests listed above. Reads and service calls go through the local API as the non-admin "Yuki Family" system user, so Home Assistant's own permissions apply. The few admin-only calls the app needs (adding a brand through its config flow, renaming a device or moving it to an area, creating an area, re-enabling a disabled `device_tracker`, reloading a config entry, reading an automation's config) are executed in-process by the integration, one by one, with only the parameters listed. Renaming/moving devices and reloading config entries only apply to config entries created by Yuki's own brand flows (their entry ids are stored when the flow finishes); a `device_tracker` is only re-enabled when its integration disabled it, never when you did; for an automation only its `description` leaves Home Assistant. Everything else is refused and logged.
+**In English:** the relay only runs the requests listed above. Reads and service calls go through the local API as the non-admin "Yuki Family" system user, so Home Assistant's own permissions apply. The few admin-only calls the app needs (listing the brands that can be added — Home Assistant's own plus installed custom integrations of type device, hub or service —, adding a brand through its config flow, renaming a device or moving it to an area, creating an area, re-enabling a disabled `device_tracker`, reloading a config entry, reading an automation's config) are executed in-process by the integration, one by one, with only the parameters listed. Renaming/moving devices and reloading config entries only apply to config entries created by Yuki's own brand flows (their entry ids are stored when the flow finishes); a `device_tracker` is only re-enabled when its integration disabled it, never when you did; for an automation only its `description` leaves Home Assistant. Everything else is refused and logged.
 
 Ajoutées autrement (directement dans Home Assistant, ou avant la version 1.2.0), tes intégrations et leurs appareils se renomment, se rangent et se rechargent dans Home Assistant.

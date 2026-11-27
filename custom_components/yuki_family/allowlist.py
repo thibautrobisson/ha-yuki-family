@@ -23,10 +23,13 @@ WS_AS_USER = frozenset(
         "search/related",
     }
 )
-HTTP_AS_USER = (  # GET seulement
-    re.compile(r"/api/camera_proxy/camera\.[0-9a-z_]+"),
-    re.compile(r"/api/config/config_entries/flow_handlers\?type=integration"),
-)
+HTTP_AS_USER = (re.compile(r"/api/camera_proxy/camera\.[0-9a-z_]+"),)  # GET seulement
+
+# La liste des marques qu'on peut ajouter : répondue ici (celles de Home Assistant et les intégrations personnalisées
+# installées, HACS compris), la même que celle que vérifie l'ajout d'une marque.
+BRANDS = "/api/config/config_entries/flow_handlers?type=integration"
+# Types d'intégration d'une « marque » (ceux de la liste « integration » de Home Assistant) ; pas les assistants (helper).
+BRAND_TYPES = frozenset({"device", "hub", "service"})
 
 # Réservés aux administrateurs dans Home Assistant : faits par l'intégration elle-même, avec ces seuls paramètres.
 FLOW_START = "/api/config/config_entries/flow"  # ajouter une marque (POST)
@@ -117,6 +120,8 @@ def classify(ask: dict[str, Any]) -> tuple[str, str]:
             raise Refused("chemin")
         if method == "GET" and any(p.fullmatch(path) for p in HTTP_AS_USER):
             return "user", "http"
+        if method == "GET" and path == BRANDS:
+            return "admin", "brands"
         if method == "POST" and path == FLOW_START:
             return "admin", "flow_start"
         if method in ("POST", "DELETE") and FLOW_STEP.fullmatch(path):
