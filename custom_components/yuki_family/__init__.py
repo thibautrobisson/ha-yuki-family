@@ -26,9 +26,8 @@ from homeassistant import data_entry_flow
 from homeassistant.auth.const import GROUP_ID_USER
 from homeassistant.config_entries import SOURCE_USER, ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
+from homeassistant.helpers import area_registry as ar, config_validation as cv, device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.data_entry_flow import FlowManagerIndexView
 from homeassistant.helpers.json import json_bytes
 from homeassistant.loader import async_get_config_flows
 
@@ -52,13 +51,32 @@ async def _user(hass: HomeAssistant, entry: ConfigEntry):
     return next(iter(user.refresh_tokens.values()), None) or await hass.auth.async_create_refresh_token(user)
 
 
-def _flow_json(hass: HomeAssistant, result: dict[str, Any]) -> dict[str, Any]:
+def _schema_json(schema: Any) -> Any:
+    """Le formulaire d'une étape en JSON, comme l'API de Home Assistant (sans passer par son code privé)."""
+    if schema is None:
+        return []
+    try:  # Home Assistant 2026.x
+        from probatio import to_field_list as convert  # noqa: PLC0415
+    except ImportError:  # versions plus anciennes
+        from voluptuous_serialize import convert  # noqa: PLC0415
+    fields = convert(schema, custom_serializer=cv.custom_serializer)
+    # Champs affichés sous condition : seulement là où Home Assistant le fait aussi.
+    visible = getattr(data_entry_flow, "add_visible_conditions_to_serialized_schema", None)
+    if visible and isinstance(fields, list):
+        visible(schema, fields)
+    return fields
+
+
+def _flow_json(result: dict[str, Any]) -> dict[str, Any]:
     """Une étape d'ajout de marque, mise en forme comme par l'API de Home Assistant (/api/config/config_entries/flow)."""
     if result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY:
         entry = result["result"]
         data = {k: v for k, v in result.items() if k not in ("data", "context", "result")}
         return data | {"result": {"entry_id": entry.entry_id, "domain": entry.domain, "title": entry.title}}
-    return FlowManagerIndexView(hass.config_entries.flow)._prepare_result_json(result)  # noqa: SLF001
+    data = dict(result)
+    if "data_schema" in data:
+        data["data_schema"] = _schema_json(data["data_schema"])
+    return data
 
 
 class Relay:
@@ -223,7 +241,7 @@ class Relay:
         if result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY:
             self.remember(result["result"].entry_id)
         (self.flows.discard if result["type"] in DONE else self.flows.add)(result["flow_id"])
-        return 200, _flow_json(self.hass, result)
+        return 200, _flow_json(result)
 
     # --- Yuki ---
 
