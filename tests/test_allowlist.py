@@ -77,7 +77,21 @@ def test_refused():
         assert refused(ask), ask
 
 
+def test_limits():
+    # automatisation : la description seulement, jamais ses actions (webhooks, jetons…)
+    raw = {"id": "1", "description": "Pompe l'été", "triggers": [{"trigger": "webhook", "webhook_id": "secret"}], "actions": [{"x": "jeton"}]}
+    assert allowlist.automation_view(raw) == {"description": "Pompe l'été"}
+    assert allowlist.automation_view({"triggers": []}) == {"description": ""}
+    # renommer / ranger : seulement un appareil d'une intégration ajoutée par Yuki
+    assert allowlist.owned({"tuya1", "yuki1"}, {"yuki1"})
+    assert not allowlist.owned({"tuya1"}, {"yuki1"})
+    assert not allowlist.owned({"tuya1"}, set())
+    # réactiver : seulement ce que l'intégration a désactivé
+    assert allowlist.REENABLE_FROM == "integration"
+
+
 if __name__ == "__main__":
     test_allowed()
     test_refused()
+    test_limits()
     print("liste autorisée : OK")

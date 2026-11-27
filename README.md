@@ -46,10 +46,12 @@ La même liste est dans le code : [`allowlist.py`](custom_components/yuki_family
 | --- | --- | --- |
 | REST `POST /api/config/config_entries/flow` | `handler` : une intégration de la liste des marques ci-dessus, jamais Yuki Family | commencer l'ajout d'une marque |
 | REST `POST` et `DELETE /api/config/config_entries/flow/<id>` | seulement un ajout de marque ouvert par Yuki | répondre au formulaire de la marque, ou l'abandonner |
-| WebSocket `config/device_registry/update` | `device_id`, `name_by_user`, `area_id` | renommer un appareil, le ranger dans une pièce |
+| WebSocket `config/device_registry/update` | `device_id` d'un appareil **d'une intégration ajoutée depuis Yuki**, `name_by_user`, `area_id` | renommer un appareil, le ranger dans une pièce |
 | WebSocket `config/area_registry/create` | `name` | créer une pièce |
-| WebSocket `config/entity_registry/update` | `entity_id` d'un `device_tracker`, `disabled_by` vide | réactiver un téléphone pour la présence à la maison |
-| WebSocket `call_service` `homeassistant.reload_config_entry` | `entry_id` (jamais celui de Yuki Family) | « Actualiser » : recharger une intégration |
-| WebSocket `automation/config` | `entity_id` d'une automatisation | lire ses horaires, sans la modifier |
+| WebSocket `config/entity_registry/update` | `entity_id` d'un `device_tracker` **désactivé par son intégration** (jamais par toi), `disabled_by` vide | réactiver un téléphone pour la présence à la maison |
+| WebSocket `call_service` `homeassistant.reload_config_entry` | `entry_id` d'une **intégration ajoutée depuis Yuki** | « Actualiser » : recharger une intégration |
+| WebSocket `automation/config` | `entity_id` d'une automatisation | lire **sa description seulement** (le programme d'un appareil) ; déclencheurs, conditions et actions ne sortent jamais |
 
-**In English:** the relay only runs the requests listed above. Reads and service calls go through the local API as the non-admin "Yuki Family" system user, so Home Assistant's own permissions apply. The few admin-only calls the app needs (adding a brand through its config flow, renaming a device or moving it to an area, creating an area, re-enabling a disabled `device_tracker`, reloading a config entry, reading an automation's config) are executed in-process by the integration, one by one, with only the parameters listed. Everything else is refused and logged.
+**In English:** the relay only runs the requests listed above. Reads and service calls go through the local API as the non-admin "Yuki Family" system user, so Home Assistant's own permissions apply. The few admin-only calls the app needs (adding a brand through its config flow, renaming a device or moving it to an area, creating an area, re-enabling a disabled `device_tracker`, reloading a config entry, reading an automation's config) are executed in-process by the integration, one by one, with only the parameters listed. Renaming/moving devices and reloading config entries only apply to config entries created by Yuki's own brand flows (their entry ids are stored when the flow finishes); a `device_tracker` is only re-enabled when its integration disabled it, never when you did; for an automation only its `description` leaves Home Assistant. Everything else is refused and logged.
+
+Ajoutées autrement (directement dans Home Assistant, ou avant la version 1.2.0), tes intégrations et leurs appareils se renomment, se rangent et se rechargent dans Home Assistant.

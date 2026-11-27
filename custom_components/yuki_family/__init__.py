@@ -6,7 +6,8 @@ liste autorisée (allowlist.py, recopiée dans le README) passent :
 - lectures et services : rejoués sur l'API locale (127.0.0.1) avec l'utilisateur système « Yuki Family », qui n'est pas
   administrateur ; Home Assistant y applique ses propres droits ;
 - les quelques réglages réservés aux administrateurs dont l'appli a besoin (ajouter une marque, renommer un appareil,
-  créer une pièce…) : faits ici même, un par un, avec leurs seuls paramètres attendus.
+  créer une pièce…) : faits ici même, un par un, avec leurs seuls paramètres attendus. Renommer, ranger ou recharger ne
+  vaut que pour les intégrations ajoutées par un assistant de marque de Yuki (leurs entry_id sont gardés à la création).
 Tout le reste est refusé. Le secret de la maison ne sert qu'à parler au serveur de Yuki ; le jeton de Home Assistant,
 lui, ne sort jamais d'ici.
 """
@@ -31,8 +32,8 @@ from homeassistant.helpers.data_entry_flow import FlowManagerIndexView
 from homeassistant.helpers.json import json_bytes
 from homeassistant.loader import async_get_config_flows
 
-from .allowlist import FLOW_STEP, Refused, classify
-from .const import CONF_RELAY_ID, CONF_SECRET, CONF_SERVER, CONF_USER_ID, DOMAIN
+from .allowlist import FLOW_STEP, REENABLE_FROM, Refused, automation_view, classify, owned
+from .const import CONF_ENTRIES, CONF_RELAY_ID, CONF_SECRET, CONF_SERVER, CONF_USER_ID, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 USER_NAME = "Yuki Family"
@@ -81,6 +82,14 @@ class Relay:
         self.next_id = 0
         self.flows: set[str] = set()  # ajouts de marque ouverts par Yuki : les seuls qu'il peut poursuivre ou abandonner
         self.task: asyncio.Task | None = None
+
+    def yuki_entries(self) -> set[str]:
+        """Les intégrations ajoutées par Yuki et toujours là."""
+        return {e for e in self.entry.data.get(CONF_ENTRIES, []) if self.hass.config_entries.async_get_entry(e)}
+
+    def remember(self, entry_id: str) -> None:
+        kept = sorted(self.yuki_entries() | {entry_id})
+        self.hass.config_entries.async_update_entry(self.entry, data={**self.entry.data, CONF_ENTRIES: kept})
 
     def token(self) -> str:
         return self.hass.auth.async_create_access_token(self.refresh)
@@ -140,14 +149,18 @@ class Relay:
         hass = self.hass
         if what == "reload":
             entry_id = cmd["service_data"]["entry_id"]
-            if entry_id == self.entry.entry_id or hass.config_entries.async_get_entry(entry_id) is None:
-                raise ValueError("Intégration inconnue")
+            if entry_id not in self.yuki_entries():
+                raise Refused("intégration qui n'a pas été ajoutée depuis Yuki : à recharger dans Home Assistant")
             await hass.config_entries.async_reload(entry_id)
             return {"context": None, "response": None}
         if what == "config/device_registry/update":
             registry = dr.async_get(hass)
-            if registry.async_get(cmd["device_id"]) is None:
+            if (device := registry.async_get(cmd["device_id"])) is None:
                 raise ValueError("Appareil inconnu")
+            # Une seule intégration par appareil depuis 2026.11 (config_entries disparaît en 2027.10) ; plusieurs avant.
+            ids = {device.config_entry_id} if hasattr(device, "config_entry_id") else set(device.config_entries)
+            if not owned(ids, self.yuki_entries()):
+                raise Refused("appareil qui n'a pas été ajouté depuis Yuki : à renommer ou ranger dans Home Assistant")
             if cmd.get("area_id") is not None and ar.async_get(hass).async_get_area(cmd["area_id"]) is None:
                 raise ValueError("Pièce inconnue")
             changes = {k: cmd[k] for k in ("name_by_user", "area_id") if k in cmd}
@@ -160,16 +173,18 @@ class Relay:
             return {"area_id": area.id, "name": area.name}
         if what == "config/entity_registry/update":
             registry = er.async_get(hass)
-            if registry.async_get(cmd["entity_id"]) is None:
+            if (entity := registry.async_get(cmd["entity_id"])) is None:
                 raise ValueError("Entité inconnue")
+            if entity.disabled_by is not None and entity.disabled_by != REENABLE_FROM:
+                raise Refused("téléphone désactivé par l'utilisateur : à réactiver dans Home Assistant")
             registry.async_update_entity(cmd["entity_id"], disabled_by=None)
             return {"entity_entry": {"entity_id": cmd["entity_id"], "disabled_by": None}}
-        # automation/config : lecture seule
+        # automation/config : la description seulement
         component = hass.data.get("automation")
         automation = component.get_entity(cmd["entity_id"]) if component else None
         if automation is None:
             raise ValueError("Automatisation inconnue")
-        return {"config": automation.raw_config}
+        return {"config": automation_view(automation.raw_config)}
 
     async def flow(self, what: str, ask: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         """Ajouter une marque : une intégration de la liste des marques (jamais Yuki Family), formulaires ouverts ici seulement."""
@@ -205,6 +220,8 @@ class Relay:
             return 400, {"errors": err.schema_errors}
         except data_entry_flow.UnknownStep as err:
             return 400, {"message": str(err)}
+        if result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY:
+            self.remember(result["result"].entry_id)
         (self.flows.discard if result["type"] in DONE else self.flows.add)(result["flow_id"])
         return 200, _flow_json(self.hass, result)
 

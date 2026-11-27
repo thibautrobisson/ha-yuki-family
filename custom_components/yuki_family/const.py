@@ -7,3 +7,4 @@ CONF_SERVER = "server"
 CONF_RELAY_ID = "relay_id"
 CONF_SECRET = "secret"
 CONF_USER_ID = "user_id"
+CONF_ENTRIES = "entries"  # intégrations ajoutées par les assistants de marque de Yuki

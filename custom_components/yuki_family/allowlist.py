@@ -55,15 +55,30 @@ WS_ADMIN = {
     ),
     # créer une pièce
     "config/area_registry/create": ({"name"}, set(), lambda c: _text(c["name"])),
-    # réactiver un téléphone que Home Assistant a trouvé mais laissé désactivé (présence à la maison) ; rien d'autre
+    # réactiver un téléphone que son intégration a laissé désactivé (présence à la maison), jamais un choix de l'utilisateur
     "config/entity_registry/update": (
         {"entity_id", "disabled_by"},
         set(),
         lambda c: _id(c["entity_id"]) and c["entity_id"].startswith("device_tracker.") and c["disabled_by"] is None,
     ),
-    # lire une automatisation (horaires d'un appareil), sans la modifier
+    # la description d'une automatisation (programme d'un appareil), rien d'autre de sa configuration
     "automation/config": ({"entity_id"}, set(), lambda c: _id(c["entity_id"]) and c["entity_id"].startswith("automation.")),
 }
+
+
+# Seule raison de désactivation que Yuki peut lever : celle de l'intégration (RegistryEntryDisabler.INTEGRATION).
+REENABLE_FROM = "integration"
+
+
+def automation_view(raw_config: dict[str, Any]) -> dict[str, str]:
+    """Ce que l'appli lit d'une automatisation : sa description. Déclencheurs, conditions et actions (webhooks, jetons…) restent ici."""
+    description = raw_config.get("description") if isinstance(raw_config, dict) else None
+    return {"description": description if isinstance(description, str) else ""}
+
+
+def owned(device_entries: set[str], yuki_entries: set[str]) -> bool:
+    """Un appareil que Yuki peut renommer ou ranger : il vient d'une intégration ajoutée par un assistant de marque de Yuki."""
+    return bool(device_entries & yuki_entries)
 
 
 class Refused(Exception):
